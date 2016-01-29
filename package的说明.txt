@@ -1,0 +1,16 @@
+    "browser-sync": 同步并发布
+    "browser-sync-spa": 前者的spa优化，暂未使用
+    "gulp": 
+    "gulp-autoprefixer": 给css自动添加浏览器私有前缀
+    "gulp-cache": 图片缓存，提高打包效率，暂未使用
+    "gulp-clean": 删除文件（原del作为前置使用时无法返回stream）
+    "gulp-css-spriter": css中的图片合并，暂未使用
+    "gulp-eslint": js校验，暂未使用
+    "gulp-if": 文件过滤（替换原gulp-filter）
+    "gulp-imagemin": 图片压缩
+    "gulp-less": less编译
+    "gulp-minify-css": css压缩
+    "gulp-notify": gulp的debug输出，暂未使用
+    "gulp-rev-all": js和css的版本控制
+    "gulp-uglify": js压缩
+    "gulp-useref": 根据html中的build合并css和js

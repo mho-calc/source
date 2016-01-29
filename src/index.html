@@ -1,0 +1,99 @@
+<!doctype html>
+<html class="no-js" lang="">
+<head>
+<meta http-equiv="Access-Control-Allow-Origin" content="*">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="description" content="">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mho半自动配装器</title>
+<!-- Place favicon.ico in the root directory -->
+
+<!-- build:css styles/vendor.css -->
+<!-- endbuild -->
+
+<!-- build:css styles/main.css -->
+<link rel="stylesheet" type="text/css" href="style/main.css"/>
+<link rel="stylesheet" type="text/css" href="style/fonts.css"/>
+<!-- endbuild -->
+
+<!-- build:js scripts/vendor/modernizr.js -->
+<!-- endbuild -->
+
+	<!-- build:js scripts/vendor.js -->
+	<script type="text/javascript" src="lib/avalon/dist/avalon.modern.min.js" defer></script>
+<!-- endbuild -->
+
+<!-- build:js scripts/main.js -->
+<script type="text/javascript" src="script/index.js" defer></script>
+<!-- endbuild -->
+</head>
+<body ms-controller="mho" ms-class="onPopup:popup!=''">
+<!--[if lt IE 10]>
+<p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+<![endif]-->
+<div class="page-wide">
+	<section class="with-header">
+		<header>条件选择</header>
+		<section class="ranged-select">
+			<label for="ranged0" ms-class="cur:!ranged">近战</label><input type="radio" name="ranged" id="ranged0" value="false" ms-duplex-boolean="ranged"/>
+			<label for="ranged1" ms-class="cur:ranged">远程</label><input type="radio" name="ranged" id="ranged1" value="true" ms-duplex-boolean="ranged"/>
+		</section>
+		<section ms-repeat-skill="selected" class="selected">
+			<header>{{skill.n}}</header>
+			<i class="icon-circle-with-minus" ms-click="skillMinus(skill)"></i>
+			<input ms-duplex-number="skill.r" type="number"/>
+			<i class="icon-circle-with-plus" ms-click="skillPlus(skill)"></i>
+			<i class="icon-circle-with-cross" ms-click="$remove"></i>
+		</section>
+		<footer><a class="btn" href="javascript:;" ms-click="listSkill">添加需求</a></footer>
+	</section>
+
+	<section class="with-header" ms-if="armor.size() > 0">
+		<header>配装结果</header>
+		<section ms-repeat-armor="armor" class="chosen" ms-class="on:armor.o">
+			<header>{{armor.n}}（{{armor.h}}）</header>
+			：{{skillJoin(armor.s)}}
+			/材料：{{armor.m}}
+			<i class="icon-chevron-with-circle-right" ms-click="showChosen(armor)"></i>
+		</section>
+	</section>
+
+	<section class="with-header" ms-if="armor.size() > 0">
+		<header>已拥有技能</header>
+		<section ms-repeat="own" class="own"><span>{{el.n}}</span>:{{el.v}}</section>
+	</section>
+
+	<section class="with-header" ms-if="gem.size() > 0">
+		<header>待选择技能珠</header>
+		<section ms-repeat-gem="gem" class="chosen" ms-class="on:gem.o">
+			<header>{{gem.n}}</header>
+			：{{skillJoin(gem.s)}}
+			/材料：{{gem.m}}
+			<i class="icon-chevron-with-circle-right" ms-click="showChosen(gem)"></i>
+		</section>
+	</section>
+
+	<footer><a class="btn" href="javascript:;" ms-click="calc" ms-if="selected.size() != 0">开始配装</a><a class="btn" href="javascript:;" ms-click="reload">重新读取数据</a></footer>
+</div>
+
+<div ms-if="popup != ''" class="popup" ms-click="hidePopup">
+	<div class="popup-wrap">
+		<div class="content" ms-if="popup == 'skill_choose'">
+			<div class="condition">
+				<label for="condition"><i class="icon-magnifying-glass"></i></label>
+				<input name="condition" ms-duplex="condition" placeholder="输入技能名查找"/>
+			</div>
+			<a ms-repeat-skill="skill" class="skill btn" href="javascript:;" ms-click="addSkill(skill.n,skill.v,$index)">{{skill.n}}</a>
+		</div>
+		<div class="content" ms-if="popup == 'loading'">
+			{{info}}
+		</div>
+		<div class="content" ms-if="popup == 'before_loading'">
+			初次载入或重新读取数据会载入2m多的数据文件，建议不要在移动环境载入，避免燃烧流量<br>
+			<a class="btn" href="javascript:;" ms-click="load">确定载入</a>
+		</div>
+	</div>
+</div>
+</body>
+</html>

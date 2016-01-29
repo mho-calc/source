@@ -1,0 +1,19 @@
+{
+  "name": "gulpTest",
+  "version": "0.0.1",
+  "dependencies": {
+    "avalon": "~1.5.5",
+    "mmRouter": "mm-router#*"
+  },
+  "authors": [
+    "water"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "src/lib",
+    "test",
+    "tests"
+  ]
+}
