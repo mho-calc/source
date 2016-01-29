@@ -15,6 +15,7 @@ var armor=[[[],[],[],[],[]],[[],[],[],[],[]]];
 var gem=[];
 var skillEffect={};
 var skill=[];
+var stone={};
 var holeValue=[0,14,32,61];
 
 function initSkill(list){//根据技能列表生成值全为0的对象
@@ -41,7 +42,8 @@ var vm = avalon.define({
 	skill: [],//可选择的技能
 	selected: [],//已选择的技能
 	armor: [],//已选择的护甲
-	gem: [],//待选择的珠子
+	gem: [],//可选择的珠子
+	stone: [],//可选择的护石
 	own: [],//已拥有技能
 	info: '',//loading时的内容
 	condition: '',//技能选择的过滤条件
@@ -64,8 +66,8 @@ var vm = avalon.define({
 		vm.closable=true;
 		vm.popup="skill_choose";
 	},
-	addSkill: function(name,val,i){//添加选择的技能
-		vm.selected.push({n: name, v: val, r: 10, hv:[0,0,0,0]});
+	addSkill: function(skill,i){//添加选择的技能
+		vm.selected.push({n: skill.n, v: skill.v, r: 10, hv:[0,0,0,0], s:skill.s});
 		vm.condition="";
 		vm.popup="";
 	},
@@ -85,11 +87,16 @@ var vm = avalon.define({
 	showChosen: function(a){//物品说明折叠
 		a.o=!a.o;
 	},
+	secondary: false,
+	showSecondary: function(){
+		vm.secondary=!vm.secondary;
+	},
 	calc: function(){//配装
 		var revise=initSkill(vm.selected);//权重修正值
 		var r=vm.ranged?1:0;
 		var own={};//已拥有属性值
 		vm.gem=[];
+		vm.stone=[];
 		//筛选珠子初始化孔平均价值
 //		var tr=0;
 		holeValue=[0,0,0,0];
@@ -179,10 +186,13 @@ var vm = avalon.define({
 			});
 			return m-n;
 		});
-		//选技能珠
-		for(var i in gem){
-			for(var s=0;s<vm.selected.size();s++){
-				var name=vm.selected[s].n;
+		//选技能珠和护石
+		for(var s=0;s<vm.selected.size();s++){
+			var name=vm.selected[s].n;
+			if(vm.selected[s].s && vm.selected[s].r>own[name]){
+				vm.stone.push(vm.selected[s].s);
+			}
+			for(var i in gem){
 				if(name in gem[i].s && gem[i].s[name]>0 && gem[i].s[name]<=vm.selected[s].r-own[name]){
 					vm.gem.push(gem[i]);
 				}
@@ -201,27 +211,33 @@ vm.$watch("condition", function(a, b) {
 });
 
 vm.$watch("popup", function(a, b) {
-	if(b==""){
+	if(a!=""){
 		document.documentElement.scrollTop=0;
 		document.body.scrollTop=0;
 	}
 });
 
 require(["domReady!", "mmRequest"], function() {
-
-	if(localStorage.getItem("update")){
-		vm.popup="loading";
-		vm.closable=false;
-		vm.info="读取本地缓存…";
-		var p=new Promise(function(resolve, reject){
-			armor=JSON.parse(localStorage.getItem("armor"));
-			skill=JSON.parse(localStorage.getItem("skill"));
-			gem=JSON.parse(localStorage.getItem("gem"));
-			resolve("读取本地缓存…");
-		});
-		p.then(function(){
-			vm.popup="";
-		});
+	var last=localStorage.getItem("update");
+	if(last){
+		if(new Date(last).getTime()>1454462075724){
+			vm.popup="loading";
+			vm.closable=false;
+			vm.info="读取本地缓存…";
+			var p=new Promise(function(resolve, reject){
+				armor=JSON.parse(localStorage.getItem("armor"));
+				skill=JSON.parse(localStorage.getItem("skill"));
+				gem=JSON.parse(localStorage.getItem("gem"));
+				resolve("读取本地缓存…");
+			});
+			p.then(function(){
+				vm.popup="";
+			});
+		}else{
+			vm.popup="loading";
+			vm.info="部分数据可能已过时，旧数据仍然可用，如需要新数据请点击“重新读取数据”…";
+			vm.closable=true;
+		}
 	}else{
 		vm.popup="before_loading";
 		vm.closable=false;
@@ -244,7 +260,7 @@ require(["domReady!", "mmRequest"], function() {
 					var iid=obj.iID;
 					var idata=obj.data;
 					if(6E4<=iid && iid<7e4 && idata[12]>=40){//所有护甲
-						var a=idata[3]==""?0:1;
+						var a=idata[3];
 						var b=iid%5;
 						var _m=[];
 						for(var j=21;j<37;j+=3){
@@ -259,6 +275,7 @@ require(["domReady!", "mmRequest"], function() {
 					}else if(1E6<=iid && iid<2e6){//所有技能
 						if(idata[3]!="无") skillEffect[idata[3]]=10;
 					}else if(2E6<=iid && iid<3e6){//所有护石
+						stone[idata[2]]=idata.slice(2);
 						skillEffect[idata[2]]=idata[7]==0?7:parseInt(100/idata[7],10);
 					}else if(5E6<=iid && iid<6e6){//所有珠子
 						var _m=[idata[13]+"x"+idata[14],idata[15]+"x"+idata[16]];
@@ -271,7 +288,7 @@ require(["domReady!", "mmRequest"], function() {
 					}
 				}
 				Object.keys(skillEffect).forEach(function(val){
-					skill.push({n: val, v: skillEffect[val]});
+					skill.push({n: val, v: skillEffect[val], s: stone[val]});
 				});
 				localStorage.setItem("armor",JSON.stringify(armor));
 				localStorage.setItem("skill",JSON.stringify(skill));

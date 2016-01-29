@@ -184,18 +184,56 @@ footer{
 		right: 0;
 		top: 0;
 		font-size: 21px;
+		transition: transform 300ms;
 	}
 	&.on{
 		white-space: normal;
+		i{
+			transform: rotate(90deg);
+		}
 	}
 }
 
 .own{
 	display: inline-block;
 	width: 120px;
+	color: darken(@main-color,50%);
 	span{
 		text-align: right;
 		display: inline-block;
 		width: 90px;
+	}
+	&.secondary{
+		color: @main-color;
+		&.hide{
+			display: none;
+		}
+	}
+}
+
+.own-alias{
+	position: absolute;
+	bottom: 5px;
+	right: 10px;
+	cursor: pointer;
+	font-size: 21px;
+	transition: transform 300ms;
+	transform: rotate(-90deg);
+	&.on{
+		transform: rotate(0deg);
+	}
+}
+
+.stone{
+	width: 500px;
+	@media (max-width: 522px){
+		width: 100%;
+	}
+	margin: 0 auto;
+	td{
+		text-align: center;
+		&:first-child{
+			text-align: left;
+		}
 	}
 }
