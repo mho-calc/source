@@ -98,13 +98,12 @@ var vm = avalon.define({
 		vm.gem=[];
 		vm.stone=[];
 		//筛选珠子初始化孔平均价值
-//		var tr=0;
 		holeValue=[0,0,0,0];
+//		var tr=0;
 //		for(var s=0;s<vm.selected.size();s++){
-//			tr+=vm.selected[s].r;
+//			tr+=vm.selected[s].r-own[vm.selected[s].n];
 //		}
 		for(var s=0;s<vm.selected.size();s++){
-//			vm.selected[s].hvp=vm.selected[s].r/tr;
 			vm.selected[s].hv=[0,0,0,0];
 		}
 		for(var h=1;h<=3;h++){
@@ -136,7 +135,6 @@ var vm = avalon.define({
 			}
 			holeValue[h]=holeValue[h]/vm.selected.size();
 		}
-//		console.log(holeValue);
 		//选护甲
 		do{
 			own=initSkill(vm.selected);
