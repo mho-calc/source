@@ -120,7 +120,7 @@ var vm = avalon.define({
 		for(var h=1;h<=3;h++){
 			for(var s=0;s<vm.selected.size();s++){
 				var name=vm.selected[s].n;
-				if(vm.selected[s].hv[h]==0) vm.selected[s].hv[h]=h==1?vm.selected[s].hv[2]/2:vm.selected[s].hv[1]+vm.selected[s].hv[h-1];
+				if(vm.selected[s].hv[h]==0) vm.selected[s].hv[h]=h==1?10:vm.selected[s].hv[1]+vm.selected[s].hv[h-1];
 				holeValue[h]+=vm.selected[s].hv[h];
 			}
 			holeValue[h]=holeValue[h]/vm.selected.size();
@@ -220,7 +220,7 @@ vm.$watch("popup", function(a, b) {
 require(["domReady!", "mmRequest"], function() {
 	var last=localStorage.getItem("update");
 	if(last){
-		if(new Date(last).getTime()>1454462075724){
+		if(new Date(last).getTime()>1454463500588){
 			vm.popup="loading";
 			vm.closable=false;
 			vm.info="读取本地缓存…";
@@ -235,7 +235,7 @@ require(["domReady!", "mmRequest"], function() {
 			});
 		}else{
 			vm.popup="loading";
-			vm.info="部分数据可能已过时，旧数据仍然可用，如需要新数据请点击“重新读取数据”…";
+			vm.info="已更新算法和数据，旧数据仍然可用，建议点击“重新读取数据”更新数据…";
 			vm.closable=true;
 		}
 	}else{
@@ -287,6 +287,8 @@ require(["domReady!", "mmRequest"], function() {
 						gem.push(obj);
 					}
 				}
+//				skillEffect.匠=50;
+//				skillEffect.装填术=50;
 				Object.keys(skillEffect).forEach(function(val){
 					skill.push({n: val, v: skillEffect[val], s: stone[val]});
 				});
