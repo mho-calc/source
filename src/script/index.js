@@ -103,16 +103,27 @@ var vm = avalon.define({
 //		for(var s=0;s<vm.selected.size();s++){
 //			tr+=vm.selected[s].r;
 //		}
-//		for(var s=0;s<vm.selected.size();s++){
+		for(var s=0;s<vm.selected.size();s++){
 //			vm.selected[s].hvp=vm.selected[s].r/tr;
-//			vm.selected[s].hv=[0,0,0,0];
-//		}
+			vm.selected[s].hv=[0,0,0,0];
+		}
 		for(var h=1;h<=3;h++){
-			for(var s=0;s<vm.selected.size();s++){
-				var name=vm.selected[s].n;
-				for(var i in gem){
-					if(name in gem[i].s && gem[i].s[name]>0 && gem[i].h==h){
-						vm.selected[s].hv[h]=gem[i].s[name]*vm.selected[s].v;
+			for(var i in gem){
+				if(gem[i].h==h){
+					var si=-1;
+					for(var s=0;s<vm.selected.size();s++){
+						var name=vm.selected[s].n;
+						if(name in gem[i].s && gem[i].s[name]>0){
+							si=s;
+						}
+					}
+					if(si>-1){
+						for(var s=0;s<vm.selected.size();s++){
+							var name=vm.selected[s].n;
+							if(name in gem[i].s){
+								vm.selected[si].hv[h]+=gem[i].s[name]*vm.selected[s].v;
+							}
+						}
 					}
 				}
 			}
@@ -235,7 +246,7 @@ require(["domReady!", "mmRequest"], function() {
 			});
 		}else{
 			vm.popup="loading";
-			vm.info="已更新算法和数据，旧数据仍然可用，建议点击“重新读取数据”更新数据…";
+			vm.info="已更新算法和数据，旧数据虽仍可用，建议点击“重新读取数据”更新数据…";
 			vm.closable=true;
 		}
 	}else{
