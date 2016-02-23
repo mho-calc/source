@@ -297,16 +297,14 @@ var vm = avalon.define({
 			do{
 				var name=vm.selected[tm_last[0]].n;
 				var list=tm_his[name];
-				var h=list[0];
-				var has=false;
-				for(var i=0;i<list.length;h=list[++i]){
+				var has=null;
+				for(var i=0,h=list[0];i<list.length;h=list[++i]){
 					if(h.h1==tm_last[1]&&h.h2==tm_last[2]&&h.h3==tm_last[3]){
-						has=true;
-						break;
+						has=h;
 					}
 				}
 				if(has){
-					var c=tm_mono[name][h.mono];
+					var c=tm_mono[name][has.mono];
 					tm_last=[tm_last[0]-1,tm_last[1]-c.h1,tm_last[2]-c.h2,tm_last[3]-c.h3];
 					for(var i=0;i<optionalGem[name].length;i++){
 						var g=optionalGem[name][i];
