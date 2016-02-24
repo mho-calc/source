@@ -54,7 +54,7 @@ function shortVal(short){
 	var r=0;
 	for(var s=0;s<vm.selected.size();s++){
 		var name=vm.selected[s].n;
-		r+=short[name]==0?0:1000+short[name]*vm.selected[s].v;
+		r+=short[name]==0?0:1000+short[name]*vm.selected[s].v+(short[name]>Math.max(vm.selected[s].s[4],vm.selected[s].s[5])?10000:0);
 	}
 	return r;
 }
@@ -196,7 +196,9 @@ var vm = avalon.define({
 										var planMax=[0,0,0,0];
 										var t_short=short[4][name];
 										var holeValue=[0,0,0,0];
-										var maxVal=1000+t_short*vm.selected[s].v;
+										var stoneMax=Math.max(vm.selected[s].s[4],vm.selected[s].s[5]);
+										var stoneEnough=short[4][name]<=stoneMax;
+										var maxVal=1000+t_short*vm.selected[s].v+(stoneEnough?0:10000);
 										//计算上界
 										for(var i=0;i<ogl;i++){
 											//设置孔：技能数值映射
@@ -221,7 +223,7 @@ var vm = avalon.define({
 														for(var j1=max1;j1>=0;j1--){
 															var last=_t_short-j1*holeValue[1];
 															if(last>0){
-																mono[name].push({val: (short[4][name]-last)*vm.selected[s].v, h1: j1, h2: j2, h3: j3});
+																mono[name].push({val: (short[4][name]-last)*vm.selected[s].v+(last<=stoneMax&&!stoneEnough?10000:0), h1: j1, h2: j2, h3: j3});
 															}else{
 																mono[name].push({val: maxVal, h1: j1, h2: j2, h3: j3});
 															}
@@ -316,7 +318,7 @@ var vm = avalon.define({
 						if(g.use>0) vm.gem.push(g);
 					}
 				}else{
-					tm_last=[tm_last[0]-1,tm_last[1],tm_last[2],tm_last[2]];
+					tm_last=[tm_last[0]-1,tm_last[1],tm_last[2],tm_last[3]];
 				}
 			}while(tm_last[0]>=0&&(tm_last[1]!=0||tm_last[2]!=0||tm_last[3]!=0));
 			//添加已有技能
