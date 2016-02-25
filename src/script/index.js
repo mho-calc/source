@@ -41,11 +41,22 @@ function holeMap(h){//珠映射
 	}
 }
 
-function shortMap(skill,short){//尚缺映射
+function shortMap(skill,short){//尚缺技能映射
 	var r={};
 	for(var s=0;s<vm.selected.size();s++){
 		var name=vm.selected[s].n;
-		r[name]=name in skill?Math.max(short[name]-skill[name],0):short[name];
+		r[name]=name in skill?short[name]-skill[name]:short[name];
+	}
+	return r;
+}
+
+function hasMap(skill,q){//已有技能映射
+	var r={};
+	for(var i=0;i<skill.length;i++){
+		for(var s in skill[i]){
+			if(s in r) r[s]+=skill[i][s]*q[i];
+			else if(s[0]!="$") r[s]=skill[i][s]*q[i];
+		}
 	}
 	return r;
 }
@@ -55,7 +66,7 @@ function shortVal(short){
 	for(var s=0;s<vm.selected.size();s++){
 		var name=vm.selected[s].n;
 		var stoneMax=vm.selected[s].s?Math.max(vm.selected[s].s[4],vm.selected[s].s[5]):0;
-		r+=short[name]==0?0:1000+short[name]*vm.selected[s].v+(short[name]>stoneMax?10000:0);
+		r+=short[name]<=0?0:1000+short[name]*vm.selected[s].v+(short[name]>stoneMax?10000:0);
 	}
 	return r;
 }
@@ -123,16 +134,33 @@ var vm = avalon.define({
 		setTimeout(function(){
 			var r=vm.ranged?1:0;
 			vm.stone=[];
-			var hole=[[],[],[],[],[]];
-			var short=[{},{},{},{},{}];//已拥有属性值
-			var size=vm.selected.size();
-			//选择备选技能珠
+			var hole=[[],[],[],[],[]];//5件装备阶段孔数
+			var short=[{},{},{},{},{}];//5件装备阶段尚缺技能值
+			var size=vm.selected.size();//总需求技能数
+			var mono=new Array(size);//所有方案
+			//选择备选技能珠，以及技能珠组合方案
 			var optionalGem=initSkill("[]");
 			for(var s=0;s<size;s++){
 				var name=vm.selected[s].n;
+				var t_short=vm.selected[s].r+5;
+				var planMax=[0,0,0,0];
+				var holeValue=new Array(4);
 				for(var i in gem){
 					if(name in gem[i].s && gem[i].s[name]>0){
 						optionalGem[name].push(gem[i]);
+						holeValue[gem[i].h]=gem[i].s;
+					}
+				}
+				//从上界开始搜索所有方案
+				var temp_size=0;
+				mono[s]=new Array(temp_size=holeValue[3]?6:1);
+				for(var j3=temp_size-1?5:0;j3>=0;j3--){
+					mono[s][j3]=new Array(temp_size=holeValue[2]?6-j3:1);
+					for(var j2=temp_size-1;j2>=0;j2--){
+						mono[s][j3][j2]=new Array(temp_size=holeValue[1]?16-j3*3-j2*2:1);
+						for(var j1=temp_size-1;j1>=0;j1--){
+							mono[s][j3][j2][j1]=hasMap(holeValue,[0,j1,j2,j3]);
+						}
 					}
 				}
 			}
@@ -162,7 +190,6 @@ var vm = avalon.define({
 			//第1层begin
 			var tm_val=shortVal(initSkill());//最优解权重
 			var tm_armor=[];//使用护甲记录
-			var tm_mono={};//所有技能方案记录
 			var tm_his={};//最优解全部记录
 			var tm_last=[];//最优解最后一步记录
 			var armorLength=[Math.min(optionalArmor[0].length,3),Math.min(optionalArmor[1].length,3),Math.min(optionalArmor[2].length,3),Math.min(optionalArmor[3].length,3),Math.min(optionalArmor[4].length,3)]
@@ -187,88 +214,51 @@ var vm = avalon.define({
 								hole[4]=hole[3].map(holeMap(optionalArmor[4][i4].h));
 								//todo
 								var his=initSkill("[]");//最优解的历史记录
-								var mono=initSkill("[]");//所有方案
-								var fv=[[[]]];//最优解函数用来记录短缺值的
 								var initShortVal=shortVal(short[4]);//基础短缺值
+								var temp_size=0;
+								var fv=new Array(temp_size=hole[4][3]+1);//最优解函数用来记录短缺值的
+								var fs=new Array(temp_size);//最优解函数用来记录短缺技能的
 								for(var s=0;s<size;s++){
 									var name=vm.selected[s].n;
 									var ogl=optionalGem[name].length;
-									if(ogl>0&&short[4][name]>0){
-										var planMax=[0,0,0,0];
-										var t_short=short[4][name];
-										var holeValue=[0,0,0,0];
-										var stoneMax=vm.selected[s].s?Math.max(vm.selected[s].s[4],vm.selected[s].s[5]):0;
-										var stoneEnough=short[4][name]<=stoneMax;
-										var maxVal=1000+t_short*vm.selected[s].v+(stoneEnough?0:10000);
-										//计算上界
-										for(var i=0;i<ogl;i++){
-											//设置孔：技能数值映射
-											var p=optionalGem[name][ogl-i-1].s[name];
-											var h=optionalGem[name][ogl-i-1].h;
-											holeValue[h]=p;
-											//如尚未配完，最大填充
-											if(t_short>0){
-												planMax[h]=Math.min(Math.ceil(t_short/p),hole[4][h]);
-												t_short-=planMax[h]*p;
-											}
-										}
-										//从上界开始搜索所有方案
-										for(var j3=planMax[3];j3>=0;j3--){
-											t_short=short[4][name]-j3*holeValue[3];
-											if(t_short>0){
-												var max2=holeValue[2]>0?Math.min(Math.ceil(t_short/holeValue[2]),hole[4][2]+hole[4][3]-j3):0;
-												for(var j2=max2;j2>=0;j2--){
-													var _t_short=t_short-j2*holeValue[2];
-													if(_t_short>0){
-														var max1=holeValue[1]>0?Math.min(Math.ceil(_t_short/holeValue[1]),hole[4][1]+(hole[4][3]-j3)*3+(hole[4][2]-j2)*2):0;
-														for(var j1=max1;j1>=0;j1--){
-															var last=_t_short-j1*holeValue[1];
-															if(last>0){
-																mono[name].push({val: (short[4][name]-last)*vm.selected[s].v+(last<=stoneMax&&!stoneEnough?10000:0), h1: j1, h2: j2, h3: j3});
-															}else{
-																mono[name].push({val: maxVal, h1: j1, h2: j2, h3: j3});
-															}
-														}
-													}else{
-														mono[name].push({val: maxVal, h1: 0, h2: j2, h3: j3});
-													}
-												}
-											}else{
-												mono[name].push({val: maxVal, h1: 0, h2: 0, h3: j3});
-											}
-										}
-									}
 									for(var j3=hole[4][3];j3>=0;j3--){
-										for(var j2=hole[4][2]+hole[4][3]-j3;j2>=0;j2--){
-											for(var j1=hole[4][1]+(hole[4][3]-j3)*3+(hole[4][2]-j2)*2;j1>=0;j1--){
-												var min_v=s==0?initShortVal:fv[j1][j2][j3];
-												while(fv.length<=j1){
-													fv.push([[]]);
-												}
-												while(fv[j1].length<=j2){
-													fv[j1].push([]);
-												}
-												while(fv[j1][j2].length<=j3){
-													fv[j1][j2].push(0);
-												}
-												for(var i=0;i<mono[name].length;i++){
-													if(j3>=mono[name][i].h3 && j2>=mono[name][i].h2 && j1>=mono[name][i].h1){
-														var origin=s==0?initShortVal:fv[j1-mono[name][i].h1][j2-mono[name][i].h2][j3-mono[name][i].h3];
-														var tv=origin-mono[name][i].val;
-														if(tv<min_v){
-															min_v=tv;
-															his[name].push({h1: j1, h2: j2, h3: j3, mono: i});
-															if(tv<tm_val){
-																tm_val=tv;
-																tm_armor=[i0,i1,i2,i3,i4];
-																tm_mono=mono;
-																tm_last=[s,j1,j2,j3];
-																tm_his=his;
+										temp_size=hole[4][2]+hole[4][3]-j3+1;
+										if(!fv[j3]){
+											fv[j3]=new Array(temp_size);
+											fs[j3]=new Array(temp_size);
+										}
+										for(var j2=temp_size-1;j2>=0;j2--){
+											temp_size=hole[4][1]+(hole[4][3]-j3)*3+(hole[4][2]-j2)*2+1;
+											if(!fv[j3][j2]){
+												fv[j3][j2]=new Array(temp_size);
+												fs[j3][j2]=new Array(temp_size);
+											}
+											for(var j1=temp_size-1;j1>=0;j1--){
+												var min_v=s==0?initShortVal:fv[j3][j2][j1];
+												var min_s=s==0?short[4]:fs[j3][j2][j1];
+												for(var m3=j3;m3>=0;m3--){
+													for(var m2=j2;m2>=0;m2--){
+														for(var m1=j1;m1>=0;m1--){
+															if(mono[s][m3]&&mono[s][m3][m2]&&mono[s][m3][m2][m1]){
+																var ts=shortMap(mono[s][m3][m2][m1],s==0?short[4]:fs[j3-m3][j2-m2][j1-m1]);
+																var tv=shortVal(ts);
+																if(tv<min_v){
+																	min_v=tv;
+																	min_s=ts;
+																	his[name].push({hole: [0,j1,j2,j3], use: [0,m1,m2,m3]});
+																	if(tv<tm_val){
+																		tm_val=tv;
+																		tm_armor=[i0,i1,i2,i3,i4];
+																		tm_last=[s,j1,j2,j3];
+																		tm_his=his;
+																	}
+																}
 															}
 														}
 													}
 												}
-												fv[j1][j2][j3]=min_v;
+												fv[j3][j2][j1]=min_v;
+												fs[j3][j2][j1]=min_s;
 											}
 										}
 									}
@@ -302,16 +292,16 @@ var vm = avalon.define({
 				var list=tm_his[name];
 				var has=null;
 				for(var i=0,h=list[0];i<list.length;h=list[++i]){
-					if(h.h1==tm_last[1]&&h.h2==tm_last[2]&&h.h3==tm_last[3]){
+					if(h.hole[1]==tm_last[1]&&h.hole[2]==tm_last[2]&&h.hole[3]==tm_last[3]){
 						has=h;
 					}
 				}
 				if(has){
-					var c=tm_mono[name][has.mono];
-					tm_last=[tm_last[0]-1,tm_last[1]-c.h1,tm_last[2]-c.h2,tm_last[3]-c.h3];
+					var u=has.use;
+					tm_last=[tm_last[0]-1,tm_last[1]-u[1],tm_last[2]-u[2],tm_last[3]-u[3]];
 					for(var i=0;i<optionalGem[name].length;i++){
 						var g=optionalGem[name][i];
-						g.use=c["h"+g.h];
+						g.use=u[g.h];
 						for(var s in g.s){
 							if(s in own) own[s]+=g.s[s]*g.use;
 							else if(s[0]!="$") own[s]=g.s[s]*g.use;
