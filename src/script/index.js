@@ -54,7 +54,8 @@ function shortVal(short){
 	var r=0;
 	for(var s=0;s<vm.selected.size();s++){
 		var name=vm.selected[s].n;
-		r+=short[name]==0?0:1000+short[name]*vm.selected[s].v+(short[name]>Math.max(vm.selected[s].s[4],vm.selected[s].s[5])?10000:0);
+		var stoneMax=vm.selected[s].s?Math.max(vm.selected[s].s[4],vm.selected[s].s[5]):0;
+		r+=short[name]==0?0:1000+short[name]*vm.selected[s].v+(short[name]>stoneMax?10000:0);
 	}
 	return r;
 }
@@ -196,7 +197,7 @@ var vm = avalon.define({
 										var planMax=[0,0,0,0];
 										var t_short=short[4][name];
 										var holeValue=[0,0,0,0];
-										var stoneMax=Math.max(vm.selected[s].s[4],vm.selected[s].s[5]);
+										var stoneMax=vm.selected[s].s?Math.max(vm.selected[s].s[4],vm.selected[s].s[5]):0;
 										var stoneEnough=short[4][name]<=stoneMax;
 										var maxVal=1000+t_short*vm.selected[s].v+(stoneEnough?0:10000);
 										//计算上界
