@@ -17,6 +17,7 @@ var skillEffect={};
 var skill=[];
 var stone={};
 var estimate_hv=[0,14,32,61];
+var resultMessage=["无需护石即可配出","至少需要单属性护石可配出","至少需要双属性护石可配出"];
 
 function initSkill(val){//根据技能列表生成值全为0的对象
 	var result={};
@@ -83,6 +84,8 @@ var vm = avalon.define({
 	own: [],//已拥有技能
 	info: '',//loading时的内容
 	condition: '',//技能选择的过滤条件
+	hasStone: false,//是否已有护石
+	result: '',//配装结果
 	$computed: {
 		ranged: {//从localStorage读取是否远程
 			set: function(val){
@@ -108,10 +111,10 @@ var vm = avalon.define({
 		vm.popup="";
 	},
 	skillMinus: function(s){//技能需求减少
-		s.r--;
+		s.r--;vm.result="";
 	},
 	skillPlus: function(s){//技能需求增加
-		s.r++;
+		s.r++;vm.result="";
 	},
 	skillJoin: function(s){//拼技能字符串
 		var t=[];
@@ -133,7 +136,11 @@ var vm = avalon.define({
 		vm.info="计算中，请稍候…";
 		setTimeout(function(){
 			var r=vm.ranged?1:0;
+			//重置结果
 			vm.stone=[];
+			vm.armor=[];
+			vm.gem=[];
+			vm.own=[];
 			var hole=[[],[],[],[],[]];//5件装备阶段孔数
 			var short=[{},{},{},{},{}];//5件装备阶段尚缺技能值
 			var size=vm.selected.size();//总需求技能数
@@ -276,7 +283,6 @@ var vm = avalon.define({
 			//收集已有技能，在下列各步骤中
 			var own=initSkill("0");
 			//添加选中的护甲
-			vm.armor=[];
 			for(var i=0;i<5;i++){
 				var a=optionalArmor[i][tm_armor[i]];
 				for(var s in a.s){
@@ -286,7 +292,6 @@ var vm = avalon.define({
 				vm.armor.push(a);
 			}
 			//添加选中的技能珠
-			vm.gem=[];
 			do{
 				var name=vm.selected[tm_last[0]].n;
 				var list=tm_his[name];
@@ -313,7 +318,6 @@ var vm = avalon.define({
 				}
 			}while(tm_last[0]>=0&&(tm_last[1]!=0||tm_last[2]!=0||tm_last[3]!=0));
 			//添加已有技能
-			vm.own=[];
 			Object.keys(own).forEach(function(val){
 				vm.own.push({n: val, v: own[val]});
 			});
@@ -326,13 +330,17 @@ var vm = avalon.define({
 				});
 				return m-n;
 			});
-			//选护石
+			//选护石和完成结论
+			var result=0;
 			for(var s=0;s<vm.selected.size();s++){
 				var name=vm.selected[s].n;
-				if(vm.selected[s].s && vm.selected[s].r>own[name]){
-					vm.stone.push(vm.selected[s].s);
+				if(vm.selected[s].r>own[name]){
+					result++;
+					if(vm.selected[s].s) vm.stone.push(vm.selected[s].s);
 				}
 			}
+			if(result>(vm.hasStone?0:Math.min(2,vm.stone.size()))) vm.result="无法配出";
+			else vm.result=vm.hasStone?"使用已有护石可以配出":resultMessage[vm.stone.size()];
 			vm.popup="";
 		},100);
 	},
@@ -352,6 +360,10 @@ vm.$watch("popup", function(a, b) {
 		document.documentElement.scrollTop=0;
 		document.body.scrollTop=0;
 	}
+});
+
+vm.$watch("selected.length", function(a, b) {
+	vm.result="";
 });
 
 require(["domReady!", "mmRequest"], function() {
