@@ -16,7 +16,7 @@ var gem=[];
 var skillEffect={};
 var skill=[];
 var stone={};
-var estimate_hv=[0,14,32,61];
+//var estimate_hv=[0,14,32,61];
 var resultMessage=["无需护石即可配出","至少需要单属性护石可配出","至少需要双属性护石可配出"];
 
 function initSkill(val){//根据技能列表生成值全为0的对象
@@ -147,9 +147,10 @@ var vm = avalon.define({
 			var mono=new Array(size);//所有方案
 			//选择备选技能珠，以及技能珠组合方案
 			var optionalGem=initSkill("[]");
+			var estimate_hv=[0,0,0,0];
+			var hasAmount=[0,0,0,0];
 			for(var s=0;s<size;s++){
 				var name=vm.selected[s].n;
-				var t_short=vm.selected[s].r+5;
 				var planMax=[0,0,0,0];
 				var holeValue=new Array(4);
 				for(var i in gem){
@@ -170,7 +171,22 @@ var vm = avalon.define({
 						}
 					}
 				}
+				if(mono[s][0][0][1]){
+					estimate_hv[1]+=mono[s][0][0][1][name]*vm.selected[s].v;
+					hasAmount[1]++;
+				}
+				if(mono[s][0][1]){
+					estimate_hv[2]+=mono[s][0][1][0][name]*vm.selected[s].v;
+					hasAmount[2]++;
+				}
+				if(mono[s][1]){
+					estimate_hv[3]+=mono[s][1][0][0][name]*vm.selected[s].v;
+					hasAmount[3]++;
+				}
 			}
+			if(hasAmount[1]!=0) estimate_hv[1]=estimate_hv[1]/hasAmount[1];
+			estimate_hv[2]=hasAmount[2]==0?2*estimate_hv[1]:estimate_hv[2]/hasAmount[2];
+			estimate_hv[3]=hasAmount[3]==0?estimate_hv[2]+estimate_hv[1]:estimate_hv[3]/hasAmount[3];
 			//选择备选护甲
 			var optionalArmor=[[],[],[],[],[]];
 			for(var i=0;i<5;i++){
@@ -187,7 +203,7 @@ var vm = avalon.define({
 					if(val>0 || h3 && h==3){
 						armor[r][i][j].val=val+estimate_hv[armor[r][i][j].h];
 						optionalArmor[i].push(armor[r][i][j]);
-						if(h==3) h3==false;
+						h3=h3&&h!=3;
 					}
 				}
 				optionalArmor[i].sort(function(a,b){
