@@ -72,6 +72,10 @@ function shortVal(short){
 	return r;
 }
 
+function holes(p,c,i,a){
+	return p*(!!(i-1))+c*i;
+}
+
 var vm = avalon.define({
 	$id: "mho",
 	last: 0,//当前数据更新时间
@@ -210,13 +214,10 @@ var vm = avalon.define({
 				optionalArmor[i].sort(function(a,b){
 					return b.val-a.val;
 				});
-				optionalArmor[i].splice(3,optionalArmor[i].length-3);
-				optionalArmor[i].sort(function(a,b){
-					return a.h-b.h;
-				});
 			}
 			//第1层begin
 			var tm_val=shortVal(initSkill());//最优解权重
+			var tm_holes=15;//最优解总孔数
 			var tm_armor=[];//使用护甲记录
 			var tm_his={};//最优解全部记录
 			var tm_last=[];//最优解最后一步记录
@@ -270,11 +271,13 @@ var vm = avalon.define({
 															if(mono[s][m3]&&mono[s][m3][m2]&&mono[s][m3][m2][m1]){
 																var ts=shortMap(mono[s][m3][m2][m1],s==0?short[4]:fs[j3-m3][j2-m2][j1-m1]);
 																var tv=shortVal(ts);
+																var th=15;
 																if(tv<min_v){
 																	min_v=tv;
 																	min_s=ts;
 																	his[name].push({hole: [0,j1,j2,j3], use: [0,m1,m2,m3]});
-																	if(tv<tm_val){
+																	if(tv<tm_val||tv==tm_val&&(th=hole[4].reduce(holes))<tm_holes){
+																		tm_holes=th;
 																		tm_val=tv;
 																		tm_armor=[i0,i1,i2,i3,i4];
 																		tm_last=[s,j1,j2,j3];
