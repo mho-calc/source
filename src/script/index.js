@@ -8,7 +8,7 @@ avalon.config({//似乎这里开头用avalon还是用require效果一样
 //			exports: 'avalon'
 //		}
 //	},
-	,debug: false
+//	,debug: false
 });
 
 var armor=[[[],[],[],[],[]],[[],[],[],[],[]]];
@@ -92,19 +92,18 @@ var vm = avalon.define({
 	condition: '',//技能选择的过滤条件
 	hasStone: false,//是否已有护石
 	result: '',//配装结果
-	armorText: [],//护甲的文本
+	armorText: [['头盔','铠甲','腕甲','腰甲','腿甲'],['战帽','护甲','护手','护腰','护腿']],//护甲的文本
 	optionalArmor: [],//可选择的护甲
-	selectedArmor: [null,null,null,null,null],//已选择的护甲
+	selectedArmor: new Array(5),//已选择的护甲
 	pos: -1,//当前选择的护甲部位
 	$computed: {
 		ranged: {//从localStorage读取是否远程
 			set: function(val){
-				this.selectedArmor=[null,null,null,null,null];
+				this.selectedArmor=new Array(5);
 				localStorage.setItem("ranged",val);
 			},
 			get: function(){
 				var flag=localStorage.getItem("ranged")?eval(localStorage.getItem("ranged")):false;
-				this.armorText=flag?['战帽','护甲','护手','护腰','护腿']:['头盔','铠甲','腕甲','腰甲','腿甲']
 				return flag;
 			}
 		}
@@ -134,8 +133,11 @@ var vm = avalon.define({
 		vm.popup="armor_choose";
 	},
 	addArmor: function(j){//添加选择的护甲
-		vm.selectedArmor[vm.pos]=armor[vm.ranged?1:0][vm.pos][j];
+		vm.selectedArmor.set(vm.pos,armor[vm.ranged?1:0][vm.pos][j]);
 		vm.popup="";
+	},
+	removeArmor: function(i){
+		vm.selectedArmor.set(i,undefined);
 	},
 	skillJoin: function(s){//拼技能字符串
 		var t=[];
