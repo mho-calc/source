@@ -27,7 +27,7 @@ function initSkill(val){//根据技能列表生成值全为0的对象
 	return result;
 }
 
-function enable(i){//技能选择的过滤，2个条件，过滤过的-已选择
+function enable(i){//技能选择的过滤，2个条件，过滤字符串和已选择
 	var flag=true;
 	vm.selected.forEach(function(val){
 		if(i.n==val.n) flag=false;
@@ -78,27 +78,34 @@ function holes(p,c,i,a){
 
 var vm = avalon.define({
 	$id: "mho",
+	view: "param",//当前页
 	last: 0,//当前数据更新时间
 	popup: "",//弹出层id，没有就不弹出
 	closable: true,//允许弹出层点击关闭
-	skill: [],//可选择的技能
+	skill: [],//可选择的技能，接受字符串和已选择双重过滤
 	selected: [],//已选择的技能
 	armor: [],//已选择的护甲
-	gem: [],//可选择的珠子
+	gem: [],//已选择的珠子
 	stone: [],//可选择的护石
 	own: [],//已拥有技能
 	info: '',//loading时的内容
 	condition: '',//技能选择的过滤条件
 	hasStone: false,//是否已有护石
 	result: '',//配装结果
+	armorText: [],//护甲的文本
+	optionalArmor: [],//可选择的护甲
+	selectedArmor: [null,null,null,null,null],//已选择的护甲
+	pos: -1,//当前选择的护甲部位
 	$computed: {
 		ranged: {//从localStorage读取是否远程
 			set: function(val){
+				this.selectedArmor=[null,null,null,null,null];
 				localStorage.setItem("ranged",val);
 			},
 			get: function(){
-				if(localStorage.getItem("ranged")) return eval(localStorage.getItem("ranged"));
-				else return false;
+				var flag=localStorage.getItem("ranged")?eval(localStorage.getItem("ranged")):false;
+				this.armorText=flag?['战帽','护甲','护手','护腰','护腿']:['头盔','铠甲','腕甲','腰甲','腿甲']
+				return flag;
 			}
 		}
 	},
@@ -110,16 +117,25 @@ var vm = avalon.define({
 		vm.closable=true;
 		vm.popup="skill_choose";
 	},
-	addSkill: function(skill,i){//添加选择的技能
+	addSkill: function(skill){//添加选择的技能
 		vm.selected.push({n: skill.n, v: skill.v, r: 10, s:skill.s});
 		vm.condition="";
 		vm.popup="";
 	},
 	skillMinus: function(s){//技能需求减少
-		s.r--;vm.result="";
+		s.r--;
 	},
 	skillPlus: function(s){//技能需求增加
-		s.r++;vm.result="";
+		s.r++;
+	},
+	listArmor: function(i){//列出待选择的技能
+		vm.optionalArmor=armor[vm.ranged?1:0][vm.pos=i];
+		vm.closable=true;
+		vm.popup="armor_choose";
+	},
+	addArmor: function(j){//添加选择的护甲
+		vm.selectedArmor[vm.pos]=armor[vm.ranged?1:0][vm.pos][j];
+		vm.popup="";
 	},
 	skillJoin: function(s){//拼技能字符串
 		var t=[];
@@ -131,7 +147,7 @@ var vm = avalon.define({
 	showChosen: function(a){//物品说明折叠
 		a.o=!a.o;
 	},
-	secondary: false,
+	secondary: false,//已拥有技能折叠
 	showSecondary: function(){
 		vm.secondary=!vm.secondary;
 	},
@@ -143,9 +159,6 @@ var vm = avalon.define({
 			var r=vm.ranged?1:0;
 			//重置结果
 			vm.stone=[];
-			vm.armor=[];
-			vm.gem=[];
-			vm.own=[];
 			var hole=[[],[],[],[],[]];//5件装备阶段孔数
 			var short=[{},{},{},{},{}];//5件装备阶段尚缺技能值
 			var size=vm.selected.size();//总需求技能数
@@ -195,25 +208,29 @@ var vm = avalon.define({
 			//选择备选护甲
 			var optionalArmor=[[],[],[],[],[]];
 			for(var i=0;i<5;i++){
-				var h3=true;
-				for(var j in armor[r][i]){
-					var h=armor[r][i][j].h;
-					var val=0;
-					for(var s=0;s<size;s++){
-						var name=vm.selected[s].n;
-						if(name in armor[r][i][j].s){
-							val+=vm.selected[s].v*armor[r][i][j].s[name];
+				if(vm.selectedArmor[i]){
+					optionalArmor[i].push(vm.selectedArmor[i]);
+				}else{
+					var h3=true;
+					for(var j in armor[r][i]){
+						var h=armor[r][i][j].h;
+						var val=0;
+						for(var s=0;s<size;s++){
+							var name=vm.selected[s].n;
+							if(name in armor[r][i][j].s){
+								val+=vm.selected[s].v*armor[r][i][j].s[name];
+							}
+						}
+						if(val>0 || h3 && h==3){
+							armor[r][i][j].val=val+estimate_hv[armor[r][i][j].h];
+							optionalArmor[i].push(armor[r][i][j]);
+							h3=h3&&h!=3;
 						}
 					}
-					if(val>0 || h3 && h==3){
-						armor[r][i][j].val=val+estimate_hv[armor[r][i][j].h];
-						optionalArmor[i].push(armor[r][i][j]);
-						h3=h3&&h!=3;
-					}
+					optionalArmor[i].sort(function(a,b){
+						return b.val-a.val;
+					});
 				}
-				optionalArmor[i].sort(function(a,b){
-					return b.val-a.val;
-				});
 			}
 			//第1层begin
 			var tm_val=shortVal(initSkill());//最优解权重
@@ -304,18 +321,24 @@ var vm = avalon.define({
 				//第2层end
 			}
 			//第1层end
+			var param=new Array(5);
+			param[0]="ranged="+r;
+			param[1]="skill="+vm.selected.map(function(o,i,a){
+				return o.n;
+			}).join("~");
 			//收集已有技能，在下列各步骤中
 			var own=initSkill("0");
 			//添加选中的护甲
-			for(var i=0;i<5;i++){
-				var a=optionalArmor[i][tm_armor[i]];
-				for(var s in a.s){
-					if(s in own) own[s]+=a.s[s];
-					else if(s[0]!="$") own[s]=a.s[s];
+			param[2]="armor="+optionalArmor.map(function(o,i,a){
+				var ar=o[tm_armor[i]];
+				for(var s in ar.s){
+					if(s in own) own[s]+=ar.s[s];
+					else if(s[0]!="$") own[s]=ar.s[s];
 				}
-				vm.armor.push(a);
-			}
+				return armor[r][i].indexOf(ar);
+			}).join("~");
 			//添加选中的技能珠
+			var selectedGem=[];
 			do{
 				var name=vm.selected[tm_last[0]].n;
 				var list=tm_his[name];
@@ -330,33 +353,26 @@ var vm = avalon.define({
 					tm_last=[tm_last[0]-1,tm_last[1]-u[1],tm_last[2]-u[2],tm_last[3]-u[3]];
 					for(var i=0;i<optionalGem[name].length;i++){
 						var g=optionalGem[name][i];
-						g.use=u[g.h];
-						for(var s in g.s){
-							if(s in own) own[s]+=g.s[s]*g.use;
-							else if(s[0]!="$") own[s]=g.s[s]*g.use;
+						if(u[g.h]>0){
+							for(var s in g.s){
+								if(s in own) own[s]+=g.s[s]*u[g.h];
+								else if(s[0]!="$") own[s]=g.s[s]*u[g.h];
+							}
+							selectedGem.push(gem.indexOf(g)+"*"+u[g.h]);
 						}
-						if(g.use>0) vm.gem.push(g);
 					}
 				}else{
 					tm_last=[tm_last[0]-1,tm_last[1],tm_last[2],tm_last[3]];
 				}
 			}while(tm_last[0]>=0&&(tm_last[1]!=0||tm_last[2]!=0||tm_last[3]!=0));
+			param[3]="gem="+selectedGem.join("~");
 			//添加已有技能
-			Object.keys(own).forEach(function(val){
-				vm.own.push({n: val, v: own[val]});
-			});
-			vm.own.sort(function(a,b){
-				var m=vm.selected.size();
-				var n=m;
-				vm.selected.forEach(function(val,i){
-					if(a.n==val.n) m=i;
-					if(b.n==val.n) n=i;
-				});
-				return m-n;
-			});
+			param[4]="own="+Object.keys(own).map(function(o,i,a){
+				return o+"*"+own[o];
+			}).join("~");
 			//选护石和完成结论
 			var result=0;
-			for(var s=0;s<vm.selected.size();s++){
+			for(var s=0;s<size;s++){
 				var name=vm.selected[s].n;
 				if(vm.selected[s].r>own[name]){
 					result++;
@@ -365,6 +381,7 @@ var vm = avalon.define({
 			}
 			if(result>(vm.hasStone?0:Math.min(2,vm.stone.size()))) vm.result="无法配出";
 			else vm.result=vm.hasStone?"使用已有护石可以配出":resultMessage[vm.stone.size()];
+			location.hash="#!/result?"+param.join("&");
 			vm.popup="";
 		},100);
 	},
@@ -386,15 +403,11 @@ vm.$watch("popup", function(a, b) {
 	}
 });
 
-vm.$watch("selected.length", function(a, b) {
-	vm.result="";
-});
-
-require(["domReady!", "mmRequest"], function() {
+require(["domReady!", "mmRequest", "mmRouter"], function() {
 	vm.last=localStorage.getItem("update");
 	if(vm.last){
 		vm.last=new Date(vm.last);
-		if(vm.last.getTime()>1456200635506){
+		if(vm.last.getTime()>1459500579761){
 			vm.popup="loading";
 			vm.closable=false;
 			vm.info="读取本地缓存…";
@@ -417,12 +430,12 @@ require(["domReady!", "mmRequest"], function() {
 	}
 
 	vm.load=function(){
+		var armorOrder=[4,0,2,1,3];
 		vm.popup="loading";
 		vm.closable=false;
 		vm.info="数据读取中…";
 		avalon.getScript('http://c.gamer.qq.com/mho/rsync_cdn_filename_all.js')
 		.done(function(){
-//			if(json.errCode==0 && json.msg=="success"){
 			armor=[[[],[],[],[],[]],[[],[],[],[],[]]];
 			skill=[];
 			gem=[];
@@ -433,7 +446,7 @@ require(["domReady!", "mmRequest"], function() {
 				var idata=obj.data;
 				if(6E4<=iid && iid<7e4 && idata[12]>=40){//所有护甲
 					var a=idata[3];
-					var b=iid%5;
+					var b=armorOrder[iid%5];
 					var _m=[];
 					for(var j=21;j<37;j+=3){
 						if(idata[j]!="") _m.push(idata[j]+"x"+idata[j+1]);
@@ -459,8 +472,6 @@ require(["domReady!", "mmRequest"], function() {
 					gem.push(obj);
 				}
 			}
-//				skillEffect.匠=50;
-//				skillEffect.装填术=50;
 			Object.keys(skillEffect).forEach(function(val){
 				skill.push({n: val, v: skillEffect[val], s: stone[val]});
 			});
@@ -470,12 +481,41 @@ require(["domReady!", "mmRequest"], function() {
 			vm.last=new Date();
 			localStorage.setItem("update",vm.last);
 			vm.popup="";
-//			}else{
-//				vm.info="数据读取失败…请稍后再试";
-//			}
 		})
 		.fail(function(){vm.info="数据读取失败…请稍后再试";});
 	};
 
-//	avalon.history.start({});
+	avalon.router.get("/param", function(){vm.view="param"});
+	avalon.router.get("/result", function(){
+		vm.view="result";
+		//重置结果
+		if(vm.result=="") vm.stone=[];
+		vm.armor=[];
+		vm.gem=[];
+		vm.own=[];
+		var r=this.query.ranged;
+		var selectedSkill=this.query.skill.split("~");
+		this.query.armor.split("~").forEach(function(val,i){
+			vm.armor.push(armor[r][i][val]);
+		});
+		this.query.gem.split("~").forEach(function(val,i){
+			var p=val.split("*");
+			var g=gem[p[0]];
+			g.use=p[1];
+			vm.gem.push(g);
+		});
+		this.query.own.split("~").forEach(function(val,i){
+			var p=val.split("*");
+			vm.own.push({n: p[0], v: p[1]});
+		});
+		vm.own.sort(function(a,b){
+			var m=100,n=100;
+			selectedSkill.forEach(function(val,i){
+				if(a.n==val) m=i;
+				if(b.n==val) n=i;
+			});
+			return m-n;
+		});
+	});
+	avalon.history.start({});
 });

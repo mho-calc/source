@@ -27,6 +27,13 @@ footer{
 	text-align: center;
 }
 
+ol{
+	line-height: 24px;
+	li{
+		margin: 5px 0;
+	}
+}
+
 .inverted{
 	background-color: @main-color;
 	color: @bg-color;
@@ -38,6 +45,7 @@ footer{
 	border-radius: 4px;
 	margin: 0 2px;
 	display: inline-block;
+	border: none;
 }
 
 .page-wide{
@@ -108,6 +116,15 @@ footer{
 		display: inline-block;
 		margin: 2px;
 	}
+	.armor{
+		display: block;
+		margin: 2px;
+		text-align: left;
+		header{
+			display: inline-block;
+			background-color: @i-color;
+		}
+	}
 }
 
 .ranged-select{
@@ -129,6 +146,7 @@ footer{
 }
 
 .selected{
+	text-align: center;
 	display: inline-block;
 	width: 25%;
 	margin-top: 5px;
@@ -144,7 +162,6 @@ footer{
 	header{
 		display: inline-block;
 		width: 40%;
-		text-align: center;
 	}
 	input{
 		padding: 0;
@@ -153,15 +170,18 @@ footer{
 		width: 3em;
 		background-color: @i-color;
 		color: @bg-color;
-		text-align: center;
 		border-radius: 10px;
 		font-size: 20px;
 		vertical-align: middle;
+		text-align: center;
 	}
 	i{
 		font-size: 24px;
 		vertical-align: middle;
 		cursor: pointer;
+	}
+	label{
+		width: 30%;
 	}
 }
 

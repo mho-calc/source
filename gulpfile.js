@@ -77,7 +77,7 @@ gulp.task('build', ['clean', 'build-less'], function(){
 	.pipe(uglify())  
 	.pipe(gulp.dest('dist/lib'));
 
-	gulp.src('src/index.html')
+	gulp.src('src/*.html')
 	.pipe(useref())
 	.pipe(gulpif('*.js', uglify()))  
 	.pipe(gulpif('*.css', prefixer({browsers: ['last 2 versions', 'Android >= 4.4', 'IOS >= 8']})))
