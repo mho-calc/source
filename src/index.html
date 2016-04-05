@@ -44,7 +44,7 @@
 			<a ms-repeat-skill="skill" class="skill btn" href="javascript:;" ms-click="addSkill(skill)">{{skill.n}}</a>
 		</div>
 		<div class="content" ms-if="popup == 'armor_choose'">
-			<a ms-repeat-armor="optionalArmor" class="armor btn" href="javascript:;" ms-click="addArmor($index)"><header>{{armor.n}}</header>：{{skillJoin(armor.s)}}</a>
+			<a ms-repeat-armor="optionalArmor" class="armor btn" href="javascript:;" ms-click="addArmor($index)"><header>{{armor.n}}（{{armor.h}}）</header>：{{skillJoin(armor.s)}}</a>
 		</div>
 		<div class="content" ms-if="popup == 'loading'">
 			{{info}}

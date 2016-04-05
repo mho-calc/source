@@ -8,7 +8,7 @@ avalon.config({//似乎这里开头用avalon还是用require效果一样
 //			exports: 'avalon'
 //		}
 //	},
-//	,debug: false
+	,debug: false
 });
 
 var armor=[[[],[],[],[],[]],[[],[],[],[],[]]];
@@ -95,6 +95,7 @@ var vm = avalon.define({
 	armorText: [['头盔','铠甲','腕甲','腰甲','腿甲'],['战帽','护甲','护手','护腰','护腿']],//护甲的文本
 	optionalArmor: [],//可选择的护甲
 	selectedArmor: new Array(5),//已选择的护甲
+	selectedArmorIndex: new Array(5),//已选择的护甲的序号
 	pos: -1,//当前选择的护甲部位
 	$computed: {
 		ranged: {//从localStorage读取是否远程
@@ -134,6 +135,7 @@ var vm = avalon.define({
 	},
 	addArmor: function(j){//添加选择的护甲
 		vm.selectedArmor.set(vm.pos,armor[vm.ranged?1:0][vm.pos][j]);
+		vm.selectedArmorIndex[vm.pos]=j;
 		vm.popup="";
 	},
 	removeArmor: function(i){
@@ -326,7 +328,7 @@ var vm = avalon.define({
 			var param=new Array(5);
 			param[0]="ranged="+r;
 			param[1]="skill="+vm.selected.map(function(o,i,a){
-				return o.n;
+				return encodeURIComponent(o.n);
 			}).join("~");
 			//收集已有技能，在下列各步骤中
 			var own=initSkill("0");
@@ -337,7 +339,7 @@ var vm = avalon.define({
 					if(s in own) own[s]+=ar.s[s];
 					else if(s[0]!="$") own[s]=ar.s[s];
 				}
-				return armor[r][i].indexOf(ar);
+				return avalon.isPlainObject(ar)?armor[r][i].indexOf(ar):vm.selectedArmorIndex[i];
 			}).join("~");
 			//添加选中的技能珠
 			var selectedGem=[];
@@ -370,7 +372,7 @@ var vm = avalon.define({
 			param[3]="gem="+selectedGem.join("~");
 			//添加已有技能
 			param[4]="own="+Object.keys(own).map(function(o,i,a){
-				return o+"*"+own[o];
+				return encodeURIComponent(o)+"*"+own[o];
 			}).join("~");
 			//选护石和完成结论
 			var result=0;
@@ -405,6 +407,38 @@ vm.$watch("popup", function(a, b) {
 	}
 });
 
+function result_view(query){
+	vm.view="result";
+	//重置结果
+	if(vm.result=="") vm.stone=[];
+	vm.armor=[];
+	vm.gem=[];
+	vm.own=[];
+	var r=query.ranged;
+	var selectedSkill=query.skill.split("~");
+	query.armor.split("~").forEach(function(val,i){
+		vm.armor.push(armor[r][i][val]);
+	});
+	query.gem.split("~").forEach(function(val,i){
+		var p=val.split("*");
+		var g=gem[p[0]];
+		g.use=p[1];
+		vm.gem.push(g);
+	});
+	query.own.split("~").forEach(function(val,i){
+		var p=val.split("*");
+		vm.own.push({n: p[0], v: p[1]});
+	});
+	vm.own.sort(function(a,b){
+		var m=100,n=100;
+		selectedSkill.forEach(function(val,i){
+			if(a.n==val) m=i;
+			if(b.n==val) n=i;
+		});
+		return m-n;
+	});
+}
+
 require(["domReady!", "mmRequest", "mmRouter"], function() {
 	vm.last=localStorage.getItem("update");
 	if(vm.last){
@@ -431,7 +465,7 @@ require(["domReady!", "mmRequest", "mmRouter"], function() {
 		vm.closable=false;
 	}
 
-	vm.load=function(){
+	vm.load=function(cb){
 		var armorOrder=[4,0,2,1,3];
 		vm.popup="loading";
 		vm.closable=false;
@@ -483,41 +517,20 @@ require(["domReady!", "mmRequest", "mmRouter"], function() {
 			vm.last=new Date();
 			localStorage.setItem("update",vm.last);
 			vm.popup="";
+			if(cb){cb();};
 		})
 		.fail(function(){vm.info="数据读取失败…请稍后再试";});
 	};
 
 	avalon.router.get("/param", function(){vm.view="param"});
 	avalon.router.get("/result", function(){
-		vm.view="result";
-		//重置结果
-		if(vm.result=="") vm.stone=[];
-		vm.armor=[];
-		vm.gem=[];
-		vm.own=[];
-		var r=this.query.ranged;
-		var selectedSkill=this.query.skill.split("~");
-		this.query.armor.split("~").forEach(function(val,i){
-			vm.armor.push(armor[r][i][val]);
-		});
-		this.query.gem.split("~").forEach(function(val,i){
-			var p=val.split("*");
-			var g=gem[p[0]];
-			g.use=p[1];
-			vm.gem.push(g);
-		});
-		this.query.own.split("~").forEach(function(val,i){
-			var p=val.split("*");
-			vm.own.push({n: p[0], v: p[1]});
-		});
-		vm.own.sort(function(a,b){
-			var m=100,n=100;
-			selectedSkill.forEach(function(val,i){
-				if(a.n==val) m=i;
-				if(b.n==val) n=i;
-			});
-			return m-n;
-		});
+		var query=this.query;
+		if(vm.last){
+			result_view(query);
+		}else{
+			vm.load(function(){result_view(query);});
+		}
 	});
 	avalon.history.start({});
 });
+
